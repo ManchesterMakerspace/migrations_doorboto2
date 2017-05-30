@@ -1,7 +1,7 @@
 // migration that looks a member docs and creates card doc for doorboto2 to read
 // run this file tunneling target mongo into localhost:27017 and running mongo membersToCards.js
 
-var db = connect('localhost:27017/makerAuth');
+var db = connect('localhost:27017/makerauth');
 
 var cursor = db.members.find({});
 var numberOfCardsMade = 0;
