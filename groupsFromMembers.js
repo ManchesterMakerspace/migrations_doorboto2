@@ -1,7 +1,7 @@
 // migration that looks a member docs and creates a seperate groups collection
 // run this file tunneling target mongo into localhost:27017 and running 'mongo groupsFromMembers.js'
 
-var db = connect('localhost:27017/makerAuth');
+var db = connect('localhost:27017/makerauth');
 
 var cursor = db.members.find({'groupKeystone': true}); // find all that are group keystones
 var numberOfGroupsMade = 0;

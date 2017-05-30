@@ -17,11 +17,19 @@ while(cursor.hasNext()){
         trueExpiry = keystone.expirationTime; // be sure we get true expiration for individual group members
     }
 
+    var memberId = memberDoc._id.valueOf(); // convert mongo _id object to just be the string value of the oid
+
+    if(typeof trueExpiry === 'string'){     // not sure how this thing got so jumbled up but lets rigt it before something goes wrong
+        trueExpiry = parseInt(trueExpiry);  // coerce to number
+    } else if(typeof trueExpiry === 'object'){
+        trueExpiry = Number(trueExpiry);    // coerce to number
+    }
+
     var cardDoc = {
         uid: memberDoc.cardID,
         holder: memberDoc.fullname,
-        memberId: memberDoc._id,
-        // cardToken: '', // TODO make this shit up
+        memberId: memberId,
+        // cardToken: '', // TODO make this shit up, probably in a future migration where we add unique tokens
         expiry: trueExpiry,
         validity: new Date().getTime() > trueExpiry ? 'expired' : 'activeMember' // current greater than expiry mark validity as expired
     };
