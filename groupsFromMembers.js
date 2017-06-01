@@ -11,7 +11,7 @@ while(cursor.hasNext()){
     var groupDoc = {
         groupRep: keystoneMember.fullname,
         groupName: keystoneMember.groupName,
-        expiry: keystoneMember.expirationTime
+        expiry: NumberLong(keystoneMember.expirationTime)
     };
     // db.groups.insert(groupDoc);
     db.groups.update({groupName: groupDoc.groupName}, groupDoc);
