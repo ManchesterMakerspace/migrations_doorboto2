@@ -20,18 +20,23 @@ for(var months = 0; month < 12; month++){  // check a year into past
     var cursor = db.payments.find({});     // get cursor for search of payment collection
     while(cursor.hasNext()){
         var payment = cursor.next();
-        if(notIn(payment.member_id.$oid, accountedForMembers)){ // for members we have yet to account for
-            var dateOfPayment = new Date(payment.payment_date).getTime();
-            if( dateOfPayment > greaterThanMonth && dateOfPayment < lessThanMonth){ // for this period
-                if(payment.member_id){
-                    if(payment.txn_type === 'subscr_payment'){
-                        db.members.update({_id: payment.member_id.$oid}, {$set: {subscription: true}});
-                    } else {
-                        db.members.update({_id: payment.member_id.$oid}, {$set: {subscription: false}});
+        if(payment.member_id){
+            if(notIn(payment.member_id.$oid, accountedForMembers)){ // for members we have yet to account for
+                var member = db.members.findOne({_id: payment.member_id.$oid});
+                if(member.expiration <= new Date.getTime()){        // given this is a member in good standing
+                    var dateOfPayment = new Date(payment.payment_date).getTime();
+                    if( dateOfPayment > greaterThanMonth && dateOfPayment < lessThanMonth){ // for this period
+                        if(payment.txn_type === 'subscr_payment'){
+                            db.members.update({_id: payment.member_id.$oid}, {$set: {subscription: true}});
+                        } else {
+                            db.members.update({_id: payment.member_id.$oid}, {$set: {subscription: false}});
+                        }
                     }
-                    accountedForMembers.push(payment.member_id.$oid); // note we have accounted for this member
+                } else { // expired member
+                    db.members.update({_id: payment.member_id.$oid}, {$set: {subscription: false}}); // subscription means active subscription
                 }
-            } // skip every traction more than a month old ...
+                accountedForMembers.push(payment.member_id.$oid); // note we have accounted for this member
+            }
         }
     }
 }
