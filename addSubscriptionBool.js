@@ -2,7 +2,7 @@
 var db = connect(MONGO_URI); // MONGO_URI needs to be evaluated in command
 // eg: mongo --eval "var MONGO_URI = 'localhost:27017/makerauthBackup'" addSubscriptionBool.js
 
-function notIn(term, array){
+function notIn(term, array){ // I'm sure there is a built in method for this... dgaf
     for(var i = 0; i < array.length; i++){
         if(term.valueOf() === array[i].valueOf()){return false;}
     }
@@ -14,23 +14,24 @@ var pointMonth = date.getMonth();
 var accountedForMembers = [];
 var onSubscription = 0;
 
-for(var month = 0; month < 12; month++){  // check a year into past
-    var lessThanMonth = date.getTime();    // time of current
+for(var month = 0; month < 12; month++){   // check monthly ranges a year into past
+    var lessThanMonth = date.getTime();    // timestamp of last month pointed at
     pointMonth--;                          // point to month before
     date.setMonth(pointMonth);             // set to month before
-    var greaterThanMonth = date.getTime(); // time of month before
+    var greaterThanMonth = date.getTime(); // timestamp of month before
     var cursor = db.payments.find({});     // get cursor for search of payment collection
-    while(cursor.hasNext()){
-        var payment = cursor.next();
-        if(payment.member_id){
-            if(notIn(payment.member_id, accountedForMembers)){ // for members we have yet to account for
-                var dateOfPayment = new Date(payment.payment_date).getTime();
-                if( dateOfPayment > greaterThanMonth && dateOfPayment < lessThanMonth){ // for this period
+    while(cursor.hasNext()){               // iterate through documents in payment collection
+        var payment = cursor.next();       // grab a payment doc
+        if(payment.member_id){             // given we have an member id already assosiated with this member (we need a better key to match on or a second one)
+                                           // unfortunately it looks like if we had one we could auto-renew, normally these failed to match on name or email
+            if(notIn(payment.member_id, accountedForMembers)){                          // for members we have yet to account for
+                var dateOfPayment = new Date(payment.payment_date).getTime();           // convert payment time to universal unix timestamp
+                if( dateOfPayment > greaterThanMonth && dateOfPayment < lessThanMonth){ // for this period (progressively searching into past from present)
                     print(payment.firstname + ' ' + payment.lastname + ' : ' + payment.txn_type);
                     if(payment.txn_type === 'subscr_payment'){
-                        // db.members.update({_id: payment.member_id}, {$set: {subscription: true}});
-                        onSubscription++;
-                    } else {
+                        // db.members.update({_id: payment.member_id}, {$set: {subscription: true}}); // probably want to run against a backup
+                        onSubscription++;                                                             // testing against real thing in read only cant hurt
+                    } else {                                                                          // want to comment out the updates though if testing
                         // db.members.update({_id: payment.member_id}, {$set: {subscription: false}});
                     }
                     accountedForMembers.push(payment.member_id); // note we have accounted for this member
