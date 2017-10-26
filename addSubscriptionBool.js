@@ -15,7 +15,7 @@ var accountedForMembers = [];
 var onSubscription = 0;
 
 var memberCursor = db.members.find({status: 'activeMember'});
-while(memberCursor.hasNext){ // start off all active members as not on subscription
+while(memberCursor.hasNext()){ // start off all active members as not on subscription
     var member = memberCursor.next();
     // db.members.update({fullname: member.fullname}, {$set: {subscription: false}});
 }
@@ -33,7 +33,7 @@ for(var month = 0; month < 12; month++){   // check monthly ranges a year into p
             if(notIn(payment.member_id, accountedForMembers)){                          // for members we have yet to account for
                 var dateOfPayment = new Date(payment.payment_date).getTime();           // convert payment time to universal unix timestamp
                 if( dateOfPayment > greaterThanMonth && dateOfPayment < lessThanMonth){ // for this period (progressively searching into past from present)
-                    print(payment.firstname + ' ' + payment.lastname + ' : ' + payment.txn_type);
+                    // print(payment.firstname + ' ' + payment.lastname + ' : ' + payment.txn_type);
                     if(payment.txn_type === 'subscr_payment'){
                         // db.members.update({_id: payment.member_id}, {$set: {subscription: true}}); // probably want to run against a backup
                         onSubscription++;                                                             // testing against real thing in read only cant hurt
@@ -41,8 +41,28 @@ for(var month = 0; month < 12; month++){   // check monthly ranges a year into p
                     accountedForMembers.push(payment.member_id); // note we have accounted for this member
                 }
             }
-        } // else maybe there is a different strategy
+        } else {
+            var match = db.members.findOne({fullname: payment.firstname + ' ' + payment.lastname});
+            if(match){
+                if(notIn(match._id, accountedForMembers)){
+                    // print(match.fullname + ' is on ' + payment.txn_type);
+                    accountedForMembers.push(match._id); // note we have accounted for this member
+                    // db.members.update({_id: payment.member_id}, {$set: {subscription: true}}); // probably want to run against a backup
+                    onSubscription++;                                                             // testing against real thing in read only cant hurt
+                }
+            } else {
+                match = db.members.findOne({email: payment.payer_email}); // given match is still undefined
+                if(match){
+                    if(notIn(match._id, accountedForMembers)){
+                        print(match.fullname + ' is on ' + payment.txn_type);
+                        accountedForMembers.push(match._id); // note we have accounted for this member
+                        // db.members.update({_id: payment.member_id}, {$set: {subscription: true}}); // probably want to run against a backup
+                        onSubscription++;                                                             // testing against real thing in read only cant hurt
+                    }
+                }
+            }
+        }
     }
 }
-print(accountedForMembers.length + ' unique member payments have ids assosiated');
+print(accountedForMembers.length + ' unique members accounted for');
 print(onSubscription + ' members are on subscription');
