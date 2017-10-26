@@ -14,6 +14,12 @@ var pointMonth = date.getMonth();
 var accountedForMembers = [];
 var onSubscription = 0;
 
+var memberCursor = db.members.find({status: 'activeMember'});
+while(memberCursor.hasNext){ // start off all active members as not on subscription
+    var member = memberCursor.next();
+    // db.members.update({fullname: member.fullname}, {$set: {subscription: false}});
+}
+
 for(var month = 0; month < 12; month++){   // check monthly ranges a year into past
     var lessThanMonth = date.getTime();    // timestamp of last month pointed at
     pointMonth--;                          // point to month before
@@ -31,13 +37,11 @@ for(var month = 0; month < 12; month++){   // check monthly ranges a year into p
                     if(payment.txn_type === 'subscr_payment'){
                         // db.members.update({_id: payment.member_id}, {$set: {subscription: true}}); // probably want to run against a backup
                         onSubscription++;                                                             // testing against real thing in read only cant hurt
-                    } else {                                                                          // want to comment out the updates though if testing
-                        // db.members.update({_id: payment.member_id}, {$set: {subscription: false}});
                     }
                     accountedForMembers.push(payment.member_id); // note we have accounted for this member
                 }
             }
-        }
+        } // else maybe there is a different strategy
     }
 }
 print(accountedForMembers.length + ' unique member payments have ids assosiated');
